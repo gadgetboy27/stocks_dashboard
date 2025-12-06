@@ -516,6 +516,10 @@ export const links = [
         name: 'color-picker',
         icon: <BiColorFill />,
       },
+      {
+        name: 'stock-comparison',
+        icon: <RiStockLine />,
+      },
     ],
   },
   {
