@@ -96,7 +96,8 @@ const StockComparison = () => {
   };
 
   const loadInitialStocks = async () => {
-    const defaultStocks = ['AAPL', 'MSFT', 'GOOGL'];
+    // Using symbols that work with Alpha Vantage demo key
+    const defaultStocks = ['IBM', 'MSFT'];
     // eslint-disable-next-line no-restricted-syntax
     for (const symbol of defaultStocks) {
       // eslint-disable-next-line no-await-in-loop
@@ -454,8 +455,8 @@ const StockComparison = () => {
       {/* API Info Footer */}
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>Note:</strong> Using Alpha Vantage API with demo key (limited to specific symbols).
-          To access all stocks, add your free API key from{' '}
+          <strong>Note:</strong> Using Alpha Vantage API with demo key (only works with IBM, MSFT, and a few other symbols).
+          To access all stocks (AAPL, GOOGL, TSLA, etc.), get your free API key from{' '}
           <a
             href="https://www.alphavantage.co/support/#api-key"
             target="_blank"
@@ -464,7 +465,7 @@ const StockComparison = () => {
           >
             alphavantage.co
           </a>
-          {' '}to a <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">.env</code> file as{' '}
+          {' '}and add it to a <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">.env</code> file as{' '}
           <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">REACT_APP_ALPHA_VANTAGE_KEY</code>
         </p>
       </div>
