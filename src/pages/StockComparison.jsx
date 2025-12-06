@@ -15,42 +15,44 @@ const StockComparison = () => {
   const [stocks, setStocks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
   const [chartData, setChartData] = useState({});
   const [timeRange, setTimeRange] = useState('1D'); // 1D, 5D, 1M, 3M, 1Y
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Load sample stocks on mount
-  useEffect(() => {
-    loadInitialStocks();
-  }, []);
-
-  // Fetch data when stocks or time range changes
-  useEffect(() => {
-    if (stocks.length > 0) {
-      fetchAllStockData();
-    }
-  }, [stocks, timeRange, refreshKey]);
-
-  const loadInitialStocks = async () => {
-    const defaultStocks = ['AAPL', 'MSFT', 'GOOGL'];
-    for (const symbol of defaultStocks) {
-      await addStock(symbol);
-    }
+  // Helper functions
+  const getRandomColor = () => {
+    const colors = [
+      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+      '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF9F40',
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
   };
 
-  const fetchAllStockData = async () => {
-    for (const stock of stocks) {
-      if (!stock.quote || !chartData[stock.symbol]) {
-        await fetchStockData(stock.symbol);
-      }
+  const addStock = async (symbol) => {
+    // Check if already added
+    if (stocks.find((s) => s.symbol === symbol)) {
+      setError(`${symbol} is already added`);
+      return;
     }
+
+    // Add stock to list
+    const newStock = {
+      symbol,
+      quote: null,
+      color: getRandomColor(),
+    };
+
+    setStocks((prev) => [...prev, newStock]);
+    setSearchQuery('');
+    setSearchResults([]);
+
+    // Fetch data will be triggered by useEffect
   };
 
   const fetchStockData = async (symbol) => {
-    setLoading(prev => ({ ...prev, [symbol]: true }));
+    setLoading((prev) => ({ ...prev, [symbol]: true }));
     setError(null);
 
     try {
@@ -71,30 +73,60 @@ const StockComparison = () => {
         const daysMap = { '5D': 5, '1M': 30, '3M': 90, '1Y': 365 };
         const days = daysMap[timeRange] || 30;
         const cutoffDate = new Date(now.setDate(now.getDate() - days));
-        historicalData = historicalData.filter(d => new Date(d.x) >= cutoffDate);
+        historicalData = historicalData.filter((d) => new Date(d.x) >= cutoffDate);
       }
 
       // Update stock with quote
-      setStocks(prev => prev.map(s =>
-        s.symbol === symbol ? { ...s, quote } : s
-      ));
+      setStocks((prev) => prev.map((s) => (s.symbol === symbol ? { ...s, quote } : s)));
 
       // Update chart data
-      setChartData(prev => ({
+      setChartData((prev) => ({
         ...prev,
-        [symbol]: historicalData
+        [symbol]: historicalData,
       }));
-
     } catch (err) {
       console.error(`Error fetching data for ${symbol}:`, err);
       setError(err.message);
 
       // Remove stock if fetch fails
-      setStocks(prev => prev.filter(s => s.symbol !== symbol));
+      setStocks((prev) => prev.filter((s) => s.symbol !== symbol));
     } finally {
-      setLoading(prev => ({ ...prev, [symbol]: false }));
+      setLoading((prev) => ({ ...prev, [symbol]: false }));
     }
   };
+
+  const loadInitialStocks = async () => {
+    const defaultStocks = ['AAPL', 'MSFT', 'GOOGL'];
+    // eslint-disable-next-line no-restricted-syntax
+    for (const symbol of defaultStocks) {
+      // eslint-disable-next-line no-await-in-loop
+      await addStock(symbol);
+    }
+  };
+
+  const fetchAllStockData = async () => {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const stock of stocks) {
+      if (!stock.quote || !chartData[stock.symbol]) {
+        // eslint-disable-next-line no-await-in-loop
+        await fetchStockData(stock.symbol);
+      }
+    }
+  };
+
+  // Load sample stocks on mount
+  useEffect(() => {
+    loadInitialStocks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch data when stocks or time range changes
+  useEffect(() => {
+    if (stocks.length > 0) {
+      fetchAllStockData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stocks, timeRange, refreshKey]);
 
   const handleSearch = async (query) => {
     if (query.length < 1) {
@@ -102,42 +134,18 @@ const StockComparison = () => {
       return;
     }
 
-    setIsSearching(true);
     try {
       const results = await stockApi.searchSymbols(query);
       setSearchResults(results.slice(0, 10)); // Limit to 10 results
     } catch (err) {
       console.error('Search error:', err);
       setSearchResults([]);
-    } finally {
-      setIsSearching(false);
     }
-  };
-
-  const addStock = async (symbol) => {
-    // Check if already added
-    if (stocks.find(s => s.symbol === symbol)) {
-      setError(`${symbol} is already added`);
-      return;
-    }
-
-    // Add stock to list
-    const newStock = {
-      symbol: symbol,
-      quote: null,
-      color: getRandomColor(),
-    };
-
-    setStocks(prev => [...prev, newStock]);
-    setSearchQuery('');
-    setSearchResults([]);
-
-    // Fetch data will be triggered by useEffect
   };
 
   const removeStock = (symbol) => {
-    setStocks(prev => prev.filter(s => s.symbol !== symbol));
-    setChartData(prev => {
+    setStocks((prev) => prev.filter((s) => s.symbol !== symbol));
+    setChartData((prev) => {
       const newData = { ...prev };
       delete newData[symbol];
       return newData;
@@ -145,15 +153,7 @@ const StockComparison = () => {
   };
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const getRandomColor = () => {
-    const colors = [
-      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-      '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF9F40'
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
+    setRefreshKey((prev) => prev + 1);
   };
 
   const formatNumber = (num) => {
