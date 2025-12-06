@@ -19,7 +19,7 @@ const API_KEYS = {
 };
 
 class StockApiService {
-  constructor(provider = API_PROVIDERS.ALPHA_VANTAGE) {
+  constructor(provider = API_PROVIDERS.YAHOO) {
     this.provider = provider;
   }
 
@@ -35,6 +35,8 @@ class StockApiService {
           return await this.getAlphaVantageQuote(symbol);
         case API_PROVIDERS.FINNHUB:
           return await this.getFinnhubQuote(symbol);
+        case API_PROVIDERS.YAHOO:
+          return await this.getYahooQuote(symbol);
         default:
           throw new Error(`Unsupported provider: ${this.provider}`);
       }
@@ -79,6 +81,8 @@ class StockApiService {
           return await this.getAlphaVantageDaily(symbol, outputSize);
         case API_PROVIDERS.FINNHUB:
           return await this.getFinnhubDaily(symbol);
+        case API_PROVIDERS.YAHOO:
+          return await this.getYahooDaily(symbol, outputSize);
         default:
           throw new Error(`Unsupported provider: ${this.provider}`);
       }
@@ -100,6 +104,8 @@ class StockApiService {
           return await this.searchAlphaVantage(keywords);
         case API_PROVIDERS.FINNHUB:
           return await this.searchFinnhub(keywords);
+        case API_PROVIDERS.YAHOO:
+          return await this.searchYahoo(keywords);
         default:
           throw new Error(`Unsupported provider: ${this.provider}`);
       }
@@ -362,6 +368,119 @@ class StockApiService {
       name: item.description,
       type: item.type,
     }));
+  }
+
+  // Yahoo Finance API Methods
+  // eslint-disable-next-line class-methods-use-this
+  async getYahooQuote(symbol) {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      console.log(`Yahoo Finance Quote API response for ${symbol}:`, data);
+
+      if (data.chart.error) {
+        throw new Error(`Invalid symbol: ${symbol}`);
+      }
+
+      const result = data.chart.result[0];
+      const meta = result.meta;
+      const quote = result.indicators.quote[0];
+
+      // Get the latest values
+      const latestIndex = quote.close.length - 1;
+      const currentPrice = meta.regularMarketPrice || quote.close[latestIndex];
+      const previousClose = meta.chartPreviousClose || meta.previousClose;
+      const change = currentPrice - previousClose;
+      const changePercent = (change / previousClose) * 100;
+
+      return {
+        symbol: meta.symbol,
+        price: parseFloat(currentPrice.toFixed(2)),
+        change: parseFloat(change.toFixed(2)),
+        changePercent: parseFloat(changePercent.toFixed(2)),
+        volume: quote.volume[latestIndex] || 0,
+        latestTradingDay: new Date(meta.regularMarketTime * 1000).toISOString().split('T')[0],
+        previousClose: parseFloat(previousClose.toFixed(2)),
+        open: quote.open[latestIndex] || currentPrice,
+        high: quote.high[latestIndex] || currentPrice,
+        low: quote.low[latestIndex] || currentPrice,
+      };
+    } catch (error) {
+      console.error(`Yahoo Finance error for ${symbol}:`, error);
+      throw new Error(`Failed to fetch data for ${symbol}: ${error.message}`);
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async getYahooDaily(symbol, outputSize = 'compact') {
+    try {
+      // Calculate date range based on outputSize
+      const period2 = Math.floor(Date.now() / 1000); // Current time
+      const daysBack = outputSize === 'full' ? 365 * 5 : 100; // 5 years or 100 days
+      const period1 = period2 - (daysBack * 24 * 60 * 60);
+
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${period1}&period2=${period2}&interval=1d`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      console.log(`Yahoo Finance Daily API response for ${symbol}:`, data);
+
+      if (data.chart.error) {
+        throw new Error(`Invalid symbol: ${symbol}`);
+      }
+
+      const result = data.chart.result[0];
+      const timestamps = result.timestamp;
+      const quote = result.indicators.quote[0];
+
+      // Transform to our standard format
+      return timestamps.map((timestamp, index) => ({
+        x: new Date(timestamp * 1000),
+        open: parseFloat((quote.open[index] || 0).toFixed(2)),
+        high: parseFloat((quote.high[index] || 0).toFixed(2)),
+        low: parseFloat((quote.low[index] || 0).toFixed(2)),
+        close: parseFloat((quote.close[index] || 0).toFixed(2)),
+        volume: quote.volume[index] || 0,
+      }));
+    } catch (error) {
+      console.error(`Yahoo Finance daily data error for ${symbol}:`, error);
+      throw new Error(`Failed to fetch daily data for ${symbol}: ${error.message}`);
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async searchYahoo(keywords) {
+    try {
+      const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(keywords)}&quotesCount=10&newsCount=0`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      console.log(`Yahoo Finance search results for "${keywords}":`, data);
+
+      if (!data.quotes || data.quotes.length === 0) {
+        return [];
+      }
+
+      return data.quotes
+        .filter((item) => item.quoteType === 'EQUITY') // Only show stocks
+        .map((item) => ({
+          symbol: item.symbol,
+          name: item.longname || item.shortname || item.symbol,
+          type: item.quoteType,
+          region: item.exchDisp || 'N/A',
+          currency: item.currency || 'USD',
+        }));
+    } catch (error) {
+      console.error('Yahoo Finance search error:', error);
+      // Fall back to mock data on error
+      console.log(`Using mock search results for "${keywords}"`);
+      return mockSearchResults.filter((stock) =>
+        stock.symbol.toLowerCase().includes(keywords.toLowerCase()) ||
+        stock.name.toLowerCase().includes(keywords.toLowerCase())
+      );
+    }
   }
 
   // Utility method to change provider
