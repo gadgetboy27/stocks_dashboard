@@ -460,8 +460,8 @@ const StockComparison = () => {
       {/* API Info Footer */}
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>Note:</strong> Using Alpha Vantage API with demo key (limited to IBM, MSFT, and a few symbols; 1D intraday data not supported).
-          To access all stocks (AAPL, GOOGL, TSLA, etc.) and all time ranges, get your free API key from{' '}
+          <strong>Demo Mode:</strong> Currently using mock/sample data because the Alpha Vantage demo API key is rate limited (5 calls/minute).
+          The data shown is for demonstration purposes only. For real-time stock data, get your free API key from{' '}
           <a
             href="https://www.alphavantage.co/support/#api-key"
             target="_blank"

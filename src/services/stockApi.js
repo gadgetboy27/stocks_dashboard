@@ -1,11 +1,16 @@
 // Stock API Service Layer
 // Supports multiple API providers with a unified interface
 
+import { mockStockQuotes, generateMockDailyData, mockSearchResults } from '../data/mockStockData';
+
 const API_PROVIDERS = {
   ALPHA_VANTAGE: 'alphavantage',
   FINNHUB: 'finnhub',
   YAHOO: 'yahoo',
 };
+
+// Flag to use mock data (automatically enabled when API fails)
+let useMockData = false;
 
 // API Keys - Users should add their own keys here or use environment variables
 const API_KEYS = {
@@ -107,6 +112,16 @@ class StockApiService {
   // Alpha Vantage API Methods
   // eslint-disable-next-line class-methods-use-this
   async getAlphaVantageQuote(symbol) {
+    // Use mock data if flag is set or if demo key
+    if (useMockData || API_KEYS.ALPHA_VANTAGE === 'demo') {
+      console.log(`Using mock data for ${symbol} quote (API key: ${API_KEYS.ALPHA_VANTAGE})`);
+      const mockQuote = mockStockQuotes[symbol];
+      if (mockQuote) {
+        return mockQuote;
+      }
+      throw new Error(`Mock data not available for symbol: ${symbol}`);
+    }
+
     const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEYS.ALPHA_VANTAGE}`;
     const response = await fetch(url);
     const data = await response.json();
@@ -117,18 +132,19 @@ class StockApiService {
       throw new Error(`Invalid symbol: ${symbol}`);
     }
 
-    if (data.Note) {
-      throw new Error('API rate limit exceeded. Please try again later or add your own API key.');
-    }
-
-    if (data.Information) {
-      throw new Error('API rate limit exceeded. The demo key has very limited calls per minute.');
+    if (data.Note || data.Information) {
+      // Enable mock data for future calls
+      useMockData = true;
+      console.warn('API rate limited - switching to mock data');
+      return this.getAlphaVantageQuote(symbol); // Retry with mock data
     }
 
     const quote = data['Global Quote'];
     if (!quote || Object.keys(quote).length === 0) {
       console.error('API Response keys:', Object.keys(data));
-      throw new Error(`No data available for symbol: ${symbol}. API may be rate limited.`);
+      // Fall back to mock data
+      useMockData = true;
+      return this.getAlphaVantageQuote(symbol);
     }
 
     return {
@@ -176,29 +192,36 @@ class StockApiService {
 
   // eslint-disable-next-line class-methods-use-this
   async getAlphaVantageDaily(symbol, outputSize = 'compact') {
+    // Use mock data if flag is set or if demo key
+    if (useMockData || API_KEYS.ALPHA_VANTAGE === 'demo') {
+      console.log(`Using mock data for ${symbol} daily (API key: ${API_KEYS.ALPHA_VANTAGE})`);
+      const days = outputSize === 'full' ? 365 : 100;
+      return generateMockDailyData(symbol, days);
+    }
+
     const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=${outputSize}&apikey=${API_KEYS.ALPHA_VANTAGE}`;
     const response = await fetch(url);
     const data = await response.json();
 
-    // Debug logging to see actual API response
     console.log(`Alpha Vantage API response for ${symbol}:`, data);
 
     if (data['Error Message']) {
       throw new Error(`Invalid symbol: ${symbol}`);
     }
 
-    if (data.Note) {
-      throw new Error('API rate limit exceeded. Please try again later.');
-    }
-
-    if (data.Information) {
-      throw new Error('API rate limit exceeded. The demo key has very limited calls per minute.');
+    if (data.Note || data.Information) {
+      // Enable mock data for future calls
+      useMockData = true;
+      console.warn('API rate limited - switching to mock data');
+      return this.getAlphaVantageDaily(symbol, outputSize);
     }
 
     const timeSeries = data['Time Series (Daily)'];
     if (!timeSeries) {
       console.error('API Response keys:', Object.keys(data));
-      throw new Error(`No daily data available for ${symbol}. API may be rate limited or symbol not supported by demo key.`);
+      // Fall back to mock data
+      useMockData = true;
+      return this.getAlphaVantageDaily(symbol, outputSize);
     }
 
     return Object.entries(timeSeries).map(([date, values]) => ({
@@ -213,12 +236,23 @@ class StockApiService {
 
   // eslint-disable-next-line class-methods-use-this
   async searchAlphaVantage(keywords) {
+    // Use mock data if flag is set or if demo key
+    if (useMockData || API_KEYS.ALPHA_VANTAGE === 'demo') {
+      console.log(`Using mock search results for "${keywords}"`);
+      return mockSearchResults.filter((stock) =>
+        stock.symbol.toLowerCase().includes(keywords.toLowerCase()) ||
+        stock.name.toLowerCase().includes(keywords.toLowerCase())
+      );
+    }
+
     const url = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${keywords}&apikey=${API_KEYS.ALPHA_VANTAGE}`;
     const response = await fetch(url);
     const data = await response.json();
 
-    if (data.Note) {
-      throw new Error('API rate limit exceeded. Please try again later.');
+    if (data.Note || data.Information) {
+      useMockData = true;
+      console.warn('API rate limited - switching to mock data for search');
+      return this.searchAlphaVantage(keywords);
     }
 
     const matches = data.bestMatches || [];
