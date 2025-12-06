@@ -4,7 +4,7 @@
 const API_PROVIDERS = {
   ALPHA_VANTAGE: 'alphavantage',
   FINNHUB: 'finnhub',
-  YAHOO: 'yahoo'
+  YAHOO: 'yahoo',
 };
 
 // API Keys - Users should add their own keys here or use environment variables
@@ -99,12 +99,13 @@ class StockApiService {
           throw new Error(`Unsupported provider: ${this.provider}`);
       }
     } catch (error) {
-      console.error(`Error searching symbols:`, error);
+      console.error('Error searching symbols:', error);
       throw error;
     }
   }
 
   // Alpha Vantage API Methods
+  // eslint-disable-next-line class-methods-use-this
   async getAlphaVantageQuote(symbol) {
     const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEYS.ALPHA_VANTAGE}`;
     const response = await fetch(url);
@@ -114,7 +115,7 @@ class StockApiService {
       throw new Error(`Invalid symbol: ${symbol}`);
     }
 
-    if (data['Note']) {
+    if (data.Note) {
       throw new Error('API rate limit exceeded. Please try again later or add your own API key.');
     }
 
@@ -128,7 +129,7 @@ class StockApiService {
       price: parseFloat(quote['05. price']),
       change: parseFloat(quote['09. change']),
       changePercent: parseFloat(quote['10. change percent'].replace('%', '')),
-      volume: parseInt(quote['06. volume']),
+      volume: parseInt(quote['06. volume'], 10),
       latestTradingDay: quote['07. latest trading day'],
       previousClose: parseFloat(quote['08. previous close']),
       open: parseFloat(quote['02. open']),
@@ -137,6 +138,7 @@ class StockApiService {
     };
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async getAlphaVantageIntraday(symbol, interval = '5min') {
     const url = `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=${symbol}&interval=${interval}&apikey=${API_KEYS.ALPHA_VANTAGE}`;
     const response = await fetch(url);
@@ -146,7 +148,7 @@ class StockApiService {
       throw new Error(`Invalid symbol: ${symbol}`);
     }
 
-    if (data['Note']) {
+    if (data.Note) {
       throw new Error('API rate limit exceeded. Please try again later.');
     }
 
@@ -161,10 +163,11 @@ class StockApiService {
       high: parseFloat(values['2. high']),
       low: parseFloat(values['3. low']),
       close: parseFloat(values['4. close']),
-      volume: parseInt(values['5. volume']),
+      volume: parseInt(values['5. volume'], 10),
     })).reverse();
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async getAlphaVantageDaily(symbol, outputSize = 'compact') {
     const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=${outputSize}&apikey=${API_KEYS.ALPHA_VANTAGE}`;
     const response = await fetch(url);
@@ -174,7 +177,7 @@ class StockApiService {
       throw new Error(`Invalid symbol: ${symbol}`);
     }
 
-    if (data['Note']) {
+    if (data.Note) {
       throw new Error('API rate limit exceeded. Please try again later.');
     }
 
@@ -189,21 +192,22 @@ class StockApiService {
       high: parseFloat(values['2. high']),
       low: parseFloat(values['3. low']),
       close: parseFloat(values['4. close']),
-      volume: parseInt(values['5. volume']),
+      volume: parseInt(values['5. volume'], 10),
     })).reverse();
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async searchAlphaVantage(keywords) {
     const url = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${keywords}&apikey=${API_KEYS.ALPHA_VANTAGE}`;
     const response = await fetch(url);
     const data = await response.json();
 
-    if (data['Note']) {
+    if (data.Note) {
       throw new Error('API rate limit exceeded. Please try again later.');
     }
 
-    const matches = data['bestMatches'] || [];
-    return matches.map(match => ({
+    const matches = data.bestMatches || [];
+    return matches.map((match) => ({
       symbol: match['1. symbol'],
       name: match['2. name'],
       type: match['3. type'],
@@ -213,6 +217,7 @@ class StockApiService {
   }
 
   // Finnhub API Methods (for future use)
+  // eslint-disable-next-line class-methods-use-this
   async getFinnhubQuote(symbol) {
     if (!API_KEYS.FINNHUB) {
       throw new Error('Finnhub API key not configured');
@@ -227,7 +232,7 @@ class StockApiService {
     }
 
     return {
-      symbol: symbol,
+      symbol,
       price: data.c,
       change: data.d,
       changePercent: data.dp,
@@ -238,6 +243,7 @@ class StockApiService {
     };
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async getFinnhubCandles(symbol) {
     if (!API_KEYS.FINNHUB) {
       throw new Error('Finnhub API key not configured');
@@ -264,6 +270,7 @@ class StockApiService {
     }));
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async getFinnhubDaily(symbol) {
     // Similar to candles but with daily resolution
     if (!API_KEYS.FINNHUB) {
@@ -291,6 +298,7 @@ class StockApiService {
     }));
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async searchFinnhub(keywords) {
     if (!API_KEYS.FINNHUB) {
       throw new Error('Finnhub API key not configured');
@@ -300,7 +308,7 @@ class StockApiService {
     const response = await fetch(url);
     const data = await response.json();
 
-    return (data.result || []).map(item => ({
+    return (data.result || []).map((item) => ({
       symbol: item.symbol,
       name: item.description,
       type: item.type,
