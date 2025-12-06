@@ -18,7 +18,7 @@ const StockComparison = () => {
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
   const [chartData, setChartData] = useState({});
-  const [timeRange, setTimeRange] = useState('1D'); // 1D, 5D, 1M, 3M, 1Y
+  const [timeRange, setTimeRange] = useState('1M'); // Default to 1M (demo key doesn't support intraday)
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Helper functions
@@ -74,6 +74,11 @@ const StockComparison = () => {
         const days = daysMap[timeRange] || 30;
         const cutoffDate = new Date(now.setDate(now.getDate() - days));
         historicalData = historicalData.filter((d) => new Date(d.x) >= cutoffDate);
+      }
+
+      // Check if we have valid data
+      if (!historicalData || historicalData.length === 0) {
+        throw new Error(`No historical data available for ${symbol}`);
       }
 
       // Update stock with quote
@@ -455,8 +460,8 @@ const StockComparison = () => {
       {/* API Info Footer */}
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>Note:</strong> Using Alpha Vantage API with demo key (only works with IBM, MSFT, and a few other symbols).
-          To access all stocks (AAPL, GOOGL, TSLA, etc.), get your free API key from{' '}
+          <strong>Note:</strong> Using Alpha Vantage API with demo key (limited to IBM, MSFT, and a few symbols; 1D intraday data not supported).
+          To access all stocks (AAPL, GOOGL, TSLA, etc.) and all time ranges, get your free API key from{' '}
           <a
             href="https://www.alphavantage.co/support/#api-key"
             target="_blank"
