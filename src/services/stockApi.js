@@ -111,6 +111,8 @@ class StockApiService {
     const response = await fetch(url);
     const data = await response.json();
 
+    console.log(`Alpha Vantage Quote API response for ${symbol}:`, data);
+
     if (data['Error Message']) {
       throw new Error(`Invalid symbol: ${symbol}`);
     }
@@ -119,9 +121,14 @@ class StockApiService {
       throw new Error('API rate limit exceeded. Please try again later or add your own API key.');
     }
 
+    if (data.Information) {
+      throw new Error('API rate limit exceeded. The demo key has very limited calls per minute.');
+    }
+
     const quote = data['Global Quote'];
     if (!quote || Object.keys(quote).length === 0) {
-      throw new Error(`No data available for symbol: ${symbol}`);
+      console.error('API Response keys:', Object.keys(data));
+      throw new Error(`No data available for symbol: ${symbol}. API may be rate limited.`);
     }
 
     return {
@@ -173,6 +180,9 @@ class StockApiService {
     const response = await fetch(url);
     const data = await response.json();
 
+    // Debug logging to see actual API response
+    console.log(`Alpha Vantage API response for ${symbol}:`, data);
+
     if (data['Error Message']) {
       throw new Error(`Invalid symbol: ${symbol}`);
     }
@@ -181,9 +191,14 @@ class StockApiService {
       throw new Error('API rate limit exceeded. Please try again later.');
     }
 
+    if (data.Information) {
+      throw new Error('API rate limit exceeded. The demo key has very limited calls per minute.');
+    }
+
     const timeSeries = data['Time Series (Daily)'];
     if (!timeSeries) {
-      throw new Error(`No daily data available for ${symbol}`);
+      console.error('API Response keys:', Object.keys(data));
+      throw new Error(`No daily data available for ${symbol}. API may be rate limited or symbol not supported by demo key.`);
     }
 
     return Object.entries(timeSeries).map(([date, values]) => ({
