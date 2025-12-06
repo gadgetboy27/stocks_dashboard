@@ -117,16 +117,14 @@ const StockComparison = () => {
   // Load sample stocks on mount
   useEffect(() => {
     loadInitialStocks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line
 
   // Fetch data when stocks or time range changes
   useEffect(() => {
     if (stocks.length > 0) {
       fetchAllStockData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stocks, timeRange, refreshKey]);
+  }, [stocks, timeRange, refreshKey]); // eslint-disable-line
 
   const handleSearch = async (query) => {
     if (query.length < 1) {
@@ -166,9 +164,9 @@ const StockComparison = () => {
 
   const formatVolume = (vol) => {
     if (vol === null || vol === undefined) return 'N/A';
-    if (vol >= 1e9) return (vol / 1e9).toFixed(2) + 'B';
-    if (vol >= 1e6) return (vol / 1e6).toFixed(2) + 'M';
-    if (vol >= 1e3) return (vol / 1e3).toFixed(2) + 'K';
+    if (vol >= 1e9) return `${(vol / 1e9).toFixed(2)}B`;
+    if (vol >= 1e6) return `${(vol / 1e6).toFixed(2)}M`;
+    if (vol >= 1e3) return `${(vol / 1e3).toFixed(2)}K`;
     return vol.toString();
   };
 
@@ -182,7 +180,7 @@ const StockComparison = () => {
   };
 
   const primaryYAxis = {
-    labelFormat: '${value}',
+    labelFormat: '$value',
     rangePadding: 'None',
     lineStyle: { width: 0 },
     majorTickLines: { width: 0 },
