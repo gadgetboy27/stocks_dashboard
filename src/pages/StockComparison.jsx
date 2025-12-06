@@ -197,7 +197,7 @@ const StockComparison = () => {
       {error && (
         <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-lg flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="text-xl">
+          <button type="button" onClick={() => setError(null)} className="text-xl">
             <IoMdClose />
           </button>
         </div>
@@ -227,6 +227,7 @@ const StockComparison = () => {
               {searchResults.map((result) => (
                 <button
                   key={result.symbol}
+                  type="button"
                   onClick={() => addStock(result.symbol)}
                   className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b dark:border-gray-600"
                 >
@@ -247,6 +248,7 @@ const StockComparison = () => {
           {['1D', '5D', '1M', '3M', '1Y'].map((range) => (
             <button
               key={range}
+              type="button"
               onClick={() => setTimeRange(range)}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 timeRange === range
@@ -262,6 +264,7 @@ const StockComparison = () => {
 
         {/* Refresh Button */}
         <button
+          type="button"
           onClick={handleRefresh}
           className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           title="Refresh data"
@@ -273,8 +276,9 @@ const StockComparison = () => {
       {/* Stock Cards - Comparison Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {stocks.map((stock) => {
-          const quote = stock.quote;
+          const { quote } = stock;
           const isPositive = quote?.change >= 0;
+          const isLoading = loading[stock.symbol];
 
           return (
             <div
@@ -284,6 +288,7 @@ const StockComparison = () => {
             >
               {/* Remove Button */}
               <button
+                type="button"
                 onClick={() => removeStock(stock.symbol)}
                 className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
               >
@@ -306,12 +311,13 @@ const StockComparison = () => {
                 </div>
               </div>
 
-              {loading[stock.symbol] ? (
+              {isLoading && (
                 <div className="text-center py-4">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100" />
                   <p className="text-sm text-gray-500 mt-2">Loading...</p>
                 </div>
-              ) : quote ? (
+              )}
+              {!isLoading && quote && (
                 <>
                   {/* Price */}
                   <div className="mb-2">
@@ -365,7 +371,8 @@ const StockComparison = () => {
                     </div>
                   </div>
                 </>
-              ) : (
+              )}
+              {!isLoading && !quote && (
                 <div className="text-center py-4 text-gray-500">No data</div>
               )}
             </div>
@@ -374,6 +381,7 @@ const StockComparison = () => {
 
         {/* Add Stock Card */}
         <button
+          type="button"
           onClick={() => document.querySelector('input[placeholder*="Search stocks"]').focus()}
           className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex flex-col items-center justify-center min-h-48"
         >
@@ -396,7 +404,7 @@ const StockComparison = () => {
             tooltip={{
               enable: true,
               shared: true,
-              format: '${point.x} : <b>${point.y}</b>',
+              format: '{point.x} : <b>{point.y}</b>',
             }}
             crosshair={{ enable: true }}
             background={currentMode === 'Dark' ? '#1F2937' : '#F9FAFB'}

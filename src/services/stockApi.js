@@ -327,6 +327,7 @@ class StockApiService {
     return this.provider;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   getAvailableProviders() {
     return Object.values(API_PROVIDERS);
   }
